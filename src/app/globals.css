@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* Sky Blue palette */
+  --color-sky-light: #E8F4FD;
+  --color-sky-mid: #B8D9F0;
+  --color-sky-deep: #2A6EA6;
+  --color-sky-card: #F0F8FF;
+  /* Legacy aliases kept so existing classes still resolve */
+  --color-cream: #E8F4FD;
+  --color-gold: #C5A880;
+  --color-navy: #1A3550;
+  --font-sans: var(--font-cairo);
+}
+
+:root {
+  --background: #E8F4FD;
+  --foreground: #1A3550;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #0f2133;
+    --foreground: #E8F4FD;
+  }
+}
+
+:root.dark {
+  --background: #0f2133;
+  --foreground: #E8F4FD;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  direction: rtl;
+}

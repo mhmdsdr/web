@@ -1,0 +1,64 @@
+[
+  {
+    "title": "ااا",
+    "author": "اااا",
+    "price": 666,
+    "category": "رواية مترجمة",
+    "coverImage": "/uploads/book-1772827643292.jpg",
+    "id": "1772827643344"
+  },
+  {
+    "title": "نساء صغيرات",
+    "author": "مستر",
+    "price": 12000,
+    "category": "رواية مترجمة",
+    "coverImage": "/uploads/book-1772810068002.jpg",
+    "description": "رواية",
+    "id": "1772810068032"
+  },
+  {
+    "title": "بوريس باسترناك",
+    "author": "مستر",
+    "price": 5000,
+    "category": "رواية مترجمة",
+    "coverImage": "/uploads/book-1772810034590.jpg",
+    "description": "رواية",
+    "id": "1772810034613"
+  },
+  {
+    "title": "منهاج الصالحين",
+    "author": "السيد علي السيستاني",
+    "price": 15000,
+    "category": "ديني",
+    "coverImage": "/uploads/book-1772809951671.jpg",
+    "description": "دين",
+    "id": "1772809951686"
+  },
+  {
+    "title": "الوظائف والمهن",
+    "author": "جين وينستر",
+    "price": 12000,
+    "category": "تطوير ذات",
+    "coverImage": "/uploads/book-1772809913427.jpg",
+    "description": "تطوير ذات",
+    "id": "1772809913452"
+  },
+  {
+    "title": "الفض الالهي",
+    "author": "مستر",
+    "price": 1200,
+    "category": "ديني",
+    "coverImage": "/uploads/book-1772809867791.jpg",
+    "description": "دين",
+    "id": "1772809867809"
+  },
+  {
+    "title": "البيوض القاتلة",
+    "author": "جين وينستر",
+    "price": 7000,
+    "category": "رواية مترجمة",
+    "coverImage": "/uploads/book-1772809831126.jpg",
+    "description": "كتاب مميز",
+    "id": "1772809831152"
+  }
+]
