@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.41",
     "ai": "^6.0.116",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
