@@ -1,20 +1,13 @@
 [
   {
-    "title": "ااا",
-    "author": "اااا",
-    "price": 666,
-    "category": "رواية مترجمة",
-    "coverImage": "/uploads/book-1772827643292.jpg",
-    "id": "1772827643344"
-  },
-  {
     "title": "نساء صغيرات",
     "author": "مستر",
     "price": 12000,
     "category": "رواية مترجمة",
     "coverImage": "/uploads/book-1772810068002.jpg",
     "description": "رواية",
-    "id": "1772810068032"
+    "id": "1772810068032",
+    "inStock": false
   },
   {
     "title": "بوريس باسترناك",

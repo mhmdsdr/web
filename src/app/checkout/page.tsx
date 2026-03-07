@@ -40,31 +40,43 @@ export default function CheckoutPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
-        setIsSubmitting(true);
         try {
-            const res = await fetch("/api/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+            // Hardcoded credentials for absolute certainty as requested
+            const BOT_TOKEN = "8760011149:AAF0JiR2PcsV6v17Cl70vSWgUpRNLlUMd3c";
+            const CHAT_ID = "832812051";
+
+            const itemsList = items.map(i => `• ${i.title} (${i.quantity})`).join("\n");
+            const message = `🛍️ طلب جديد من المتجر (سلة التسوق)!\n\n` +
+                `👤 اسم الزبون: ${form.name.trim()}\n` +
+                `📞 الهاتف: ${form.phone.trim()}\n` +
+                `📍 العنوان: ${form.address.trim()}\n\n` +
+                `📚 الكتب:\n${itemsList}\n\n` +
+                `💰 الإجمالي: ${cartTotal.toLocaleString("ar-IQ")} د.ع`;
+
+            console.log("🛠️ DEBUG: Starting Checkout Telegram send...");
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    customerName: form.name.trim(),
-                    customerPhone: form.phone.trim(),
-                    customerAddress: form.address.trim(),
-                    items: items.map(i => ({
-                        bookTitle: i.title,
-                        price: i.price,
-                        quantity: i.quantity,
-                    })),
-                    total: cartTotal,
-                }),
+                    chat_id: CHAT_ID,
+                    text: message
+                })
             });
-            const data = await res.json();
-            if (res.ok) {
-                setOrderId(data.orderId ?? "");
+
+            console.log("🛠️ DEBUG: Checkout Response Status:", response.status);
+            const result = await response.json();
+
+            if (response.ok) {
+                setOrderId(`ORD-${Date.now()}`);
                 clearCart();
                 setIsSuccess(true);
+            } else {
+                throw new Error(result.description || "فشل الإرسال إلى تليجرام");
             }
-        } catch {
-            // still show success so user isn't stuck
+        } catch (err: any) {
+            console.error("❌ Checkout Error:", err);
+            // still show success so user isn't stuck, but log the error
             clearCart();
             setIsSuccess(true);
         }

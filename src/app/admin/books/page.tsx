@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Book } from "@/data/books";
 import { AddBookForm } from "@/components/admin/AddBookForm";
-import { Trash2, Plus, BookOpen, Search, RefreshCw } from "lucide-react";
+import { Trash2, Plus, BookOpen, Search, RefreshCw, CheckCircle2, CircleOff } from "lucide-react";
 
 export default function AdminBooksPage() {
     const [books, setBooks] = useState<Book[]>([]);
@@ -57,6 +57,21 @@ export default function AdminBooksPage() {
             setToast({ msg: `تمت إضافة "${newBook.title}" بنجاح`, type: "success" });
         } else {
             setToast({ msg: "فشل في إضافة الكتاب", type: "error" });
+        }
+    };
+
+    // Toggle stock status
+    const handleToggleStock = async (id: string, currentStatus: boolean) => {
+        const res = await fetch("/api/books", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, inStock: !currentStatus }),
+        });
+        if (res.ok) {
+            setBooks(prev => prev.map(b => b.id === id ? { ...b, inStock: !currentStatus } : b));
+            setToast({ msg: "تم تحديث حالة التوفر", type: "success" });
+        } else {
+            setToast({ msg: "فشل في تحديث الحالة", type: "error" });
         }
     };
 
@@ -153,7 +168,7 @@ export default function AdminBooksPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr style={{ backgroundColor: "#B8D9F0" }}>
-                                {["الغلاف", "عنوان الكتاب", "المؤلف", "التصنيف", "السعر", "إجراءات"].map(h => (
+                                {["الغلاف", "عنوان الكتاب", "المؤلف", "التصنيف", "السعر", "الحالة", "إجراءات"].map(h => (
                                     <th key={h} className="px-5 py-3 text-right font-bold" style={{ color: "#1A3550" }}>{h}</th>
                                 ))}
                             </tr>
@@ -199,6 +214,21 @@ export default function AdminBooksPage() {
                                         </td>
                                         <td className="px-5 py-3 font-bold" style={{ color: "#C5A880" }}>
                                             {book.price.toLocaleString("ar-IQ")} د.ع
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <button
+                                                onClick={() => handleToggleStock(book.id, book.inStock !== false)}
+                                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${book.inStock !== false
+                                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                                                    }`}
+                                            >
+                                                {book.inStock !== false ? (
+                                                    <><CheckCircle2 className="w-3.5 h-3.5" /> متوفر</>
+                                                ) : (
+                                                    <><CircleOff className="w-3.5 h-3.5" /> نفذت</>
+                                                )}
+                                            </button>
                                         </td>
                                         <td className="px-5 py-3">
                                             <button

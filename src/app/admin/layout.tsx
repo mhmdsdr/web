@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, LayoutDashboard, BookMarked, ShoppingBag, LogOut } from "lucide-react";
 
 const NAV = [
@@ -12,6 +12,13 @@ const NAV = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        router.push("/login");
+        router.refresh();
+    };
 
     return (
         <div className="min-h-screen flex" style={{ backgroundColor: "#E8F4FD", direction: "rtl" }}>
@@ -49,13 +56,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t" style={{ borderColor: "#2A6EA6" }}>
+                <div className="p-4 border-t space-y-2" style={{ borderColor: "#2A6EA6" }}>
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm hover:bg-red-500/10"
+                        style={{ color: "#e05252" }}
+                    >
+                        <LogOut className="w-4 h-4" />
+                        تسجيل الخروج
+                    </button>
                     <Link
                         href="/"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm"
                         style={{ color: "#B8D9F0" }}
                     >
-                        <LogOut className="w-4 h-4" />
+                        <ShoppingBag className="w-4 h-4" />
                         العودة للمتجر
                     </Link>
                 </div>

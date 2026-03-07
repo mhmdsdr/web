@@ -10,6 +10,7 @@ export interface Book {
     price: number;
     category: string;
     coverImage?: string;
+    inStock?: boolean;
 }
 
 interface BookCardProps {
@@ -48,26 +49,37 @@ export function BookCard({ book, index = 0 }: BookCardProps) {
                     </div>
                 )}
 
+                {/* Stock Status Badge */}
+                {book.inStock === false && (
+                    <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 animate-pulse">
+                        نفذت الكمية
+                    </div>
+                )}
+
                 {/* Hover overlay - Add to Cart button */}
                 <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
+                    className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center ${book.inStock === false ? "cursor-not-allowed" : ""
+                        }`}
                     style={{ backgroundColor: "rgba(26,53,80,0.55)" }}
                     onClick={(e) => {
-                        e.preventDefault(); // Prevent navigating to detail page when clicking the button
+                        e.preventDefault();
                         e.stopPropagation();
                     }}
                 >
                     <motion.button
                         onClick={(e) => {
+                            if (book.inStock === false) return;
                             e.preventDefault();
                             e.stopPropagation();
                             addItem(book);
                         }}
-                        whileTap={{ scale: 0.93 }}
-                        className="translate-y-4 group-hover:translate-y-0 transition-transform duration-300 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 shadow-lg"
+                        whileTap={book.inStock !== false ? { scale: 0.93 } : {}}
+                        className={`translate-y-4 group-hover:translate-y-0 transition-transform duration-300 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 shadow-lg ${book.inStock === false ? "opacity-50 grayscale cursor-not-allowed" : ""
+                            }`}
                         style={{ backgroundColor: "#C5A880" }}
+                        disabled={book.inStock === false}
                     >
-                        إضافة للسلة
+                        {book.inStock === false ? "غير متوفر" : "إضافة للسلة"}
                     </motion.button>
                 </div>
             </Link>

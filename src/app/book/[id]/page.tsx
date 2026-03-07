@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { BookOpen, Star, ShoppingCart, ArrowRight, ChevronRight, User, X, CheckCircle } from "lucide-react";
+import { BookOpen, Star, ShoppingCart, ArrowRight, ChevronRight, User, X, CheckCircle, MapPin, AlertCircle } from "lucide-react";
+// EmailJS removed, using Telegram Bot API via fetch
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -17,6 +18,7 @@ interface Book {
     category: string;
     coverImage?: string;
     description?: string;
+    inStock?: boolean;
 }
 
 // Static mock reviews (will show consistently per book)
@@ -58,9 +60,10 @@ export default function BookDetailPage() {
 
     // Modal state
     const [showOrderModal, setShowOrderModal] = useState(false);
-    const [orderForm, setOrderForm] = useState({ name: "", phone: "" });
+    const [orderForm, setOrderForm] = useState({ name: "", phone: "", address: "" });
     const [isOrderSubmitting, setIsOrderSubmitting] = useState(false);
     const [isOrderSuccess, setIsOrderSuccess] = useState(false);
+    const [orderError, setOrderError] = useState("");
 
     const [userRating, setUserRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
@@ -101,17 +104,55 @@ export default function BookDetailPage() {
 
     const handleOrderSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!orderForm.name || !orderForm.phone) return;
+        if (!orderForm.name || !orderForm.phone || !orderForm.address) return;
         setIsOrderSubmitting(true);
-        // Simulate order submission
-        await new Promise(res => setTimeout(res, 1500));
-        setIsOrderSubmitting(false);
-        setIsOrderSuccess(true);
-        setTimeout(() => {
-            setIsOrderSuccess(false);
-            setShowOrderModal(false);
-            setOrderForm({ name: "", phone: "" });
-        }, 3000);
+        setOrderError("");
+
+        try {
+            // Hardcoded credentials for absolute certainty as requested
+            const BOT_TOKEN = "8760011149:AAF0JiR2PcsV6v17Cl70vSWgUpRNLlUMd3c";
+            const CHAT_ID = "832812051";
+
+            const message = `طلب جديد من المتجر! \n` +
+                `اسم الزبون: ${orderForm.name} \n` +
+                `الهاتف: ${orderForm.phone} \n` +
+                `العنوان: ${orderForm.address} \n` +
+                `اسم الكتاب: ${book!.title}`;
+
+            console.log("🛠️ DEBUG: Starting Telegram send...");
+            console.log("🛠️ DEBUG: Payload:", { chat_id: CHAT_ID, text: message });
+
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: message
+                })
+            });
+
+            console.log("🛠️ DEBUG: Response Status:", response.status);
+            const result = await response.json();
+            console.log("🛠️ DEBUG: Response Data:", result);
+
+            if (!response.ok) {
+                throw new Error(result.description || "فشل الإرسال إلى تليجرام");
+            }
+
+            // Success flow
+            setIsOrderSuccess(true);
+            setTimeout(() => {
+                setIsOrderSuccess(false);
+                setShowOrderModal(false);
+                setOrderForm({ name: "", phone: "", address: "" });
+            }, 4000);
+
+        } catch (err: any) {
+            console.error("❌ DEBUG ERROR:", err);
+            setOrderError(`خطأ في الإرسال: ${err.message || "عطل في الاتصال"}`);
+        } finally {
+            setIsOrderSubmitting(false);
+        }
     };
 
     if (loading) return (
@@ -177,6 +218,15 @@ export default function BookDetailPage() {
                                         <span className="text-xs font-medium">غلاف الكتاب</span>
                                     </div>
                                 )}
+
+                                {/* Stock Badge */}
+                                {book!.inStock === false && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-[#1A3550]/40 backdrop-blur-[2px]">
+                                        <div className="bg-red-500 text-white font-black px-6 py-2 rounded-full shadow-2xl animate-pulse scale-110">
+                                            نفذت الكمية
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -224,18 +274,22 @@ export default function BookDetailPage() {
                             <div className="flex flex-col sm:flex-row gap-4 mt-4">
                                 <button
                                     onClick={handleAddToCart}
-                                    className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-white text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-95"
+                                    disabled={book!.inStock === false}
+                                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-white text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-95 ${book!.inStock === false ? "opacity-40 grayscale cursor-not-allowed transform-none shadow-none" : ""
+                                        }`}
                                     style={{ backgroundColor: added ? "#2A6EA6" : "#C5A880" }}
                                 >
                                     <ShoppingCart className="w-6 h-6" />
-                                    {added ? "تمت الإضافة ✓" : "إضافة للسلة"}
+                                    {book!.inStock === false ? "غير متوفر حالياً" : (added ? "تمت الإضافة ✓" : "إضافة للسلة")}
                                 </button>
                                 <button
                                     onClick={handleBuyNow}
-                                    className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg transition-all border-2 hover:-translate-y-1 active:scale-95"
+                                    disabled={book!.inStock === false}
+                                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg transition-all border-2 hover:-translate-y-1 active:scale-95 ${book!.inStock === false ? "opacity-30 cursor-not-allowed border-dashed" : ""
+                                        }`}
                                     style={{ borderColor: "#1A3550", color: "#1A3550", backgroundColor: "transparent" }}
-                                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#1A3550"; e.currentTarget.style.color = "white"; }}
-                                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1A3550"; }}
+                                    onMouseEnter={e => { if (book!.inStock !== false) { e.currentTarget.style.backgroundColor = "#1A3550"; e.currentTarget.style.color = "white"; } }}
+                                    onMouseLeave={e => { if (book!.inStock !== false) { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#1A3550"; } }}
                                 >
                                     اطلب الآن
                                 </button>
@@ -405,7 +459,31 @@ export default function BookDetailPage() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="pt-4">
+
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-bold px-1" style={{ color: "#1A3550" }}>عنوان التوصيل</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 opacity-30" style={{ color: "#1A3550" }} />
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    value={orderForm.address}
+                                                    onChange={e => setOrderForm(f => ({ ...f, address: e.target.value }))}
+                                                    className="w-full px-5 py-3.5 pr-12 rounded-2xl border bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 transition-all"
+                                                    style={{ borderColor: "#B8D9F0", color: "#1A3550" }}
+                                                    placeholder="المنطقة، المعلم القريب..."
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {orderError && (
+                                            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold animate-shake">
+                                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                                <p>{orderError}</p>
+                                            </div>
+                                        )}
+
+                                        <div className="pt-2">
                                             <button
                                                 type="submit"
                                                 disabled={isOrderSubmitting}

@@ -62,3 +62,26 @@ export async function DELETE(req: NextRequest) {
     await writeBooks(filtered);
     return NextResponse.json({ success: true });
 }
+
+// PATCH /api/books  — update a book
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json() as { id: string } & Partial<Book>;
+        if (!body.id) return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
+
+        const books = await readBooks();
+        const index = books.findIndex(b => b.id === body.id);
+
+        if (index === -1) {
+            return NextResponse.json({ error: "الكتاب غير موجود" }, { status: 404 });
+        }
+
+        // Merge existing book with new fields
+        books[index] = { ...books[index], ...body };
+
+        await writeBooks(books);
+        return NextResponse.json(books[index]);
+    } catch {
+        return NextResponse.json({ error: "خطأ في الخادم" }, { status: 500 });
+    }
+}

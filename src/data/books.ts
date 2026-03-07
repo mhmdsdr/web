@@ -6,6 +6,7 @@ export interface Book {
     category: string;
     coverImage?: string;
     description?: string;
+    inStock?: boolean;
 }
 
 export const BOOKS: Book[] = [
