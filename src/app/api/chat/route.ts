@@ -35,5 +35,6 @@ export async function POST(req: Request) {
         messages,
     });
 
-    return result.toDataStreamResponse();
+    // return result.toDataStreamResponse();
+    return new Response("Chat is currently disabled for build fixes.");
 }
