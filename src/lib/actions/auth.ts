@@ -9,6 +9,10 @@ export async function loginAction(formData: FormData) {
     const password = formData.get('password') as string;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
+    console.log("🛠️ DEBUG AUTH: Attempting login...");
+    console.log("🛠️ DEBUG AUTH: ADMIN_PASSWORD from env is:", adminPassword ? "Defined (length: " + adminPassword.length + ")" : "UNDEFINED ❌");
+    console.log("🛠️ DEBUG AUTH: Password provided by user matches env:", password === adminPassword);
+
     if (password === adminPassword) {
         const cookieStore = await cookies();
         cookieStore.set(SESSION_COOKIE, 'authenticated', {
