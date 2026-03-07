@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Lock, Mail, Loader2 } from "lucide-react";
+import { BookOpen, Lock, Loader2 } from "lucide-react";
+import { loginAction } from "@/lib/actions/auth";
 import Link from "next/link";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -18,19 +18,16 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const res = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-            });
+            const formData = new FormData();
+            formData.append("password", password);
 
-            const data = await res.json();
+            const result = await loginAction(formData);
 
-            if (data.success) {
+            if (result.success) {
                 router.push("/admin");
                 router.refresh();
             } else {
-                setError(data.message || "خطأ في تسجيل الدخول");
+                setError(result.error || "خطأ في تسجيل الدخول");
             }
         } catch (err) {
             setError("حدث خطأ ما، يرجى المحاولة لاحقاً");
@@ -64,22 +61,7 @@ export default function LoginPage() {
 
                     <div className="space-y-4">
                         <div className="relative">
-                            <label className="text-xs font-bold text-navy mb-1.5 block pr-2">البريد الإلكتروني</label>
-                            <div className="relative">
-                                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-300" />
-                                <input
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="admin@example.com"
-                                    className="w-full bg-sky-50/50 border border-sky-100 rounded-2xl py-4 pr-12 pl-4 text-sm focus:outline-none focus:ring-2 focus:ring-navy/10 focus:border-navy/20 transition-all text-navy"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="relative">
-                            <label className="text-xs font-bold text-navy mb-1.5 block pr-2">كلمة السر</label>
+                            <label className="text-xs font-bold text-navy mb-1.5 block pr-2">كلمة السر الخاصة بالمدير</label>
                             <div className="relative">
                                 <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-300" />
                                 <input
