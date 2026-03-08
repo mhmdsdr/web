@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile, writeFile } from "fs/promises";
-import path from "path";
-
-const DATA_PATH = path.join(process.cwd(), "src", "data", "books.json");
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 interface Book {
     id: string;
@@ -12,55 +9,97 @@ interface Book {
     category: string;
     coverImage?: string;
     description?: string;
-}
-
-async function readBooks(): Promise<Book[]> {
-    try {
-        const raw = await readFile(DATA_PATH, "utf-8");
-        return JSON.parse(raw) as Book[];
-    } catch {
-        return [];
-    }
-}
-
-async function writeBooks(books: Book[]) {
-    await writeFile(DATA_PATH, JSON.stringify(books, null, 2), "utf-8");
+    inStock?: boolean;
 }
 
 // GET /api/books
 export async function GET() {
-    const books = await readBooks();
-    return NextResponse.json(books);
+    try {
+        if (!isSupabaseConfigured()) {
+            return NextResponse.json({ error: "Supabase data is not configured" }, { status: 500 });
+        }
+
+        const { data, error } = await supabase
+            .from("books")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Supabase Fetch Error:", error.message);
+            return NextResponse.json({ error: "فشل جلب الكتب" }, { status: 500 });
+        }
+
+        return NextResponse.json(data);
+    } catch (err) {
+        console.error("GET API Error:", err);
+        return NextResponse.json({ error: "خطأ في الخادم" }, { status: 500 });
+    }
 }
 
 // POST /api/books  — add a new book
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json() as Omit<Book, "id">;
+
         if (!body.title || !body.author || !body.price || !body.category) {
             return NextResponse.json({ error: "بيانات الكتاب غير مكتملة" }, { status: 400 });
         }
-        const books = await readBooks();
-        const newBook: Book = { ...body, id: Date.now().toString() };
-        books.unshift(newBook);          // newest first
-        await writeBooks(books);
-        return NextResponse.json(newBook, { status: 201 });
-    } catch {
+
+        if (!isSupabaseConfigured()) {
+            return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
+        }
+
+        const { data, error } = await supabase
+            .from("books")
+            .insert([{
+                title: body.title,
+                author: body.author,
+                price: body.price,
+                category: body.category,
+                coverImage: body.coverImage,
+                description: body.description,
+                inStock: body.inStock ?? true
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Supabase Insert Error:", error.message);
+            return NextResponse.json({ error: `فشل إضافة الكتاب: ${error.message}` }, { status: 500 });
+        }
+
+        return NextResponse.json(data, { status: 201 });
+    } catch (err) {
+        console.error("POST API Error:", err);
         return NextResponse.json({ error: "خطأ في الخادم" }, { status: 500 });
     }
 }
 
 // DELETE /api/books?id=xxx
 export async function DELETE(req: NextRequest) {
-    const id = req.nextUrl.searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
-    const books = await readBooks();
-    const filtered = books.filter(b => b.id !== id);
-    if (filtered.length === books.length) {
-        return NextResponse.json({ error: "الكتاب غير موجود" }, { status: 404 });
+    try {
+        const id = req.nextUrl.searchParams.get("id");
+        if (!id) return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
+
+        if (!isSupabaseConfigured()) {
+            return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
+        }
+
+        const { error } = await supabase
+            .from("books")
+            .delete()
+            .eq("id", id);
+
+        if (error) {
+            console.error("Supabase Delete Error:", error.message);
+            return NextResponse.json({ error: "فشل حذف الكتاب" }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error("DELETE API Error:", err);
+        return NextResponse.json({ error: "خطأ في الخادم" }, { status: 500 });
     }
-    await writeBooks(filtered);
-    return NextResponse.json({ success: true });
 }
 
 // PATCH /api/books  — update a book
@@ -69,19 +108,28 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json() as { id: string } & Partial<Book>;
         if (!body.id) return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
 
-        const books = await readBooks();
-        const index = books.findIndex(b => b.id === body.id);
-
-        if (index === -1) {
-            return NextResponse.json({ error: "الكتاب غير موجود" }, { status: 404 });
+        if (!isSupabaseConfigured()) {
+            return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
         }
 
-        // Merge existing book with new fields
-        books[index] = { ...books[index], ...body };
+        // Prepare update data (excluding id)
+        const { id, ...updateData } = body;
 
-        await writeBooks(books);
-        return NextResponse.json(books[index]);
-    } catch {
+        const { data, error } = await supabase
+            .from("books")
+            .update(updateData)
+            .eq("id", id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Supabase Update Error:", error.message);
+            return NextResponse.json({ error: "فشل تحديث الكتاب" }, { status: 500 });
+        }
+
+        return NextResponse.json(data);
+    } catch (err) {
+        console.error("PATCH API Error:", err);
         return NextResponse.json({ error: "خطأ في الخادم" }, { status: 500 });
     }
 }
