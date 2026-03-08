@@ -6,10 +6,9 @@ interface Book {
     title: string;
     author: string;
     price: number;
-    category: string;
-    coverImage?: string;
+    category?: string;
+    image_url?: string;
     description?: string;
-    inStock?: boolean;
 }
 
 // GET /api/books
@@ -39,10 +38,10 @@ export async function GET() {
 // POST /api/books  — add a new book
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json() as Omit<Book, "id">;
+        const body = await req.json();
 
-        if (!body.title || !body.author || !body.price || !body.category) {
-            return NextResponse.json({ error: "بيانات الكتاب غير مكتملة" }, { status: 400 });
+        if (!body.title || !body.author || !body.price) {
+            return NextResponse.json({ error: "بيانات الكتاب غير مكتملة (العنوان، المؤلف، السعر)" }, { status: 400 });
         }
 
         if (!isSupabaseConfigured()) {
@@ -54,11 +53,9 @@ export async function POST(req: NextRequest) {
             .insert([{
                 title: body.title,
                 author: body.author,
-                price: body.price,
-                category: body.category,
-                coverImage: body.coverImage,
-                description: body.description,
-                inStock: body.inStock ?? true
+                price: Number(body.price),
+                image_url: body.image_url || body.coverImage,
+                description: body.description
             }])
             .select()
             .single();
@@ -105,15 +102,18 @@ export async function DELETE(req: NextRequest) {
 // PATCH /api/books  — update a book
 export async function PATCH(req: NextRequest) {
     try {
-        const body = await req.json() as { id: string } & Partial<Book>;
+        const body = await req.json();
         if (!body.id) return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
 
         if (!isSupabaseConfigured()) {
             return NextResponse.json({ error: "Supabase is not configured" }, { status: 500 });
         }
 
-        // Prepare update data (excluding id)
-        const { id, ...updateData } = body;
+        // Prepare update data (excluding id, mapping coverImage if present)
+        const { id, coverImage, category, inStock, ...updateData } = body;
+        if (coverImage || body.image_url) {
+            updateData.image_url = coverImage || body.image_url;
+        }
 
         const { data, error } = await supabase
             .from("books")

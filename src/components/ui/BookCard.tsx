@@ -9,6 +9,7 @@ export interface Book {
     author: string;
     price: number;
     category: string;
+    image_url?: string;
     coverImage?: string;
     inStock?: boolean;
 }
@@ -20,6 +21,9 @@ interface BookCardProps {
 
 export function BookCard({ book, index = 0 }: BookCardProps) {
     const { addItem } = useCart();
+
+    // Determine the image source safely (image_url is the new Supabase field)
+    const displayImage = book.image_url || book.coverImage;
 
     return (
         <motion.div
@@ -40,8 +44,8 @@ export function BookCard({ book, index = 0 }: BookCardProps) {
         >
             {/* Navigable Cover Area */}
             <Link href={`/book/${book.id}`} className="relative aspect-[3/4] overflow-hidden flex items-center justify-center bg-[#daeef9]">
-                {book.coverImage ? (
-                    <img src={book.coverImage} alt={book.title} className="w-full h-full object-cover" />
+                {displayImage ? (
+                    <img src={displayImage} alt={book.title} className="w-full h-full object-cover" />
                 ) : (
                     <div className="flex flex-col items-center gap-2 text-[#2A6EA6]">
                         <BookOpen className="w-10 h-10 opacity-30" />

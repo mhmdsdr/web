@@ -197,8 +197,8 @@ export default function AdminBooksPage() {
                                     >
                                         <td className="px-5 py-3">
                                             <div className="w-10 h-14 rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: "#B8D9F0" }}>
-                                                {book.coverImage
-                                                    ? <img src={book.coverImage} alt={book.title} className="w-full h-full object-cover" />
+                                                {(book.image_url || book.coverImage)
+                                                    ? <img src={book.image_url || book.coverImage} alt={book.title} className="w-full h-full object-cover" />
                                                     : <BookOpen className="w-5 h-5" style={{ color: "#2A6EA6" }} />}
                                             </div>
                                         </td>
@@ -219,8 +219,8 @@ export default function AdminBooksPage() {
                                             <button
                                                 onClick={() => handleToggleStock(book.id, book.inStock !== false)}
                                                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${book.inStock !== false
-                                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                                                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                    : "bg-red-100 text-red-700 hover:bg-red-200"
                                                     }`}
                                             >
                                                 {book.inStock !== false ? (

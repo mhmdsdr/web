@@ -4,7 +4,8 @@ export interface Book {
     author: string;
     price: number;
     category: string;
-    coverImage?: string;
+    coverImage?: string; // Legacy field, to be migrated
+    image_url?: string;  // New Supabase field
     description?: string;
     inStock?: boolean;
 }

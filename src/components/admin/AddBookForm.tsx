@@ -112,7 +112,7 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
         if (!validate()) return;
         setSubmitting(true);
 
-        let coverImage: string | undefined;
+        let image_url: string | undefined;
 
         if (imageFile) {
             setUploading(true);
@@ -122,7 +122,7 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
                 const res = await fetch("/api/upload", { method: "POST", body: fd });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "فشل رفع الصورة");
-                coverImage = data.url;
+                image_url = data.url;
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : "فشل رفع الصورة";
                 setUploadError(message);
@@ -139,7 +139,7 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
                 author: form.author.trim(),
                 price: Number(form.price),
                 category: form.category,
-                coverImage,
+                image_url,
                 description: form.description.trim() || undefined,
             });
         } catch (err: unknown) {

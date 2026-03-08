@@ -16,6 +16,7 @@ interface Book {
     author: string;
     price: number;
     category: string;
+    image_url?: string;
     coverImage?: string;
     description?: string;
     inStock?: boolean;
@@ -210,8 +211,8 @@ export default function BookDetailPage() {
                                 className="w-56 h-80 sm:w-64 sm:h-96 rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center"
                                 style={{ backgroundColor: "#B8D9F0" }}
                             >
-                                {book!.coverImage ? (
-                                    <img src={book!.coverImage} alt={book!.title} className="w-full h-full object-cover shadow-inner" />
+                                {(book!.image_url || book!.coverImage) ? (
+                                    <img src={book!.image_url || book!.coverImage} alt={book!.title} className="w-full h-full object-cover shadow-inner" />
                                 ) : (
                                     <div className="flex flex-col items-center gap-3" style={{ color: "#2A6EA6" }}>
                                         <BookOpen className="w-16 h-16 opacity-50" />
