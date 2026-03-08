@@ -19,4 +19,4 @@ export const BOOKS: Book[] = [
     { id: "6", title: "الخيميائي", author: "باولو كويلو", price: 7000, category: "رواية مترجمة", description: "رحلة البطل سانتياغو نحو الكنز." },
 ];
 
-export const CATEGORIES = ["روايات", "تاريخ", "علمية", "أدب"];
+export const CATEGORIES = ["تطوير الذات", "فلسفة", "ديني", "رواية"];
