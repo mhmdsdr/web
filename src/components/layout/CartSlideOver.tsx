@@ -75,16 +75,29 @@ export function CartSlideOver() {
                 </div>
 
                 {items.length > 0 && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                        <div className="flex justify-between items-center mb-4">
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-3">
+                        <div className="flex justify-between items-center mb-2">
                             <span className="font-medium text-gray-500">المجموع التقديري</span>
                             <span className="text-xl font-bold text-navy dark:text-cream">{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
                         </div>
+
+                        {/* Button 2: Proceed to Checkout */}
                         <button
                             onClick={handleCheckout}
-                            className="w-full py-3 bg-navy hover:bg-gold text-white rounded-xl font-bold transition-colors cursor-pointer"
+                            className="w-full py-3.5 bg-navy hover:bg-gold text-white rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                         >
                             متابعة الشراء
+                        </button>
+
+                        {/* Button 1: Continue Shopping */}
+                        <button
+                            onClick={() => {
+                                closeCart();
+                                router.push("/");
+                            }}
+                            className="w-full py-3 bg-white border-2 border-navy/10 hover:border-gold hover:bg-gold/5 text-navy dark:text-cream rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            إكمال التسوق
                         </button>
                     </div>
                 )}
