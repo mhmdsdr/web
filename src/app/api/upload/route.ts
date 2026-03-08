@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
     try {
@@ -33,12 +33,12 @@ export async function POST(request: NextRequest) {
         const ext = file.name.split(".").pop() ?? "jpg";
         const filename = `book-${Date.now()}.${ext}`;
 
-        if (!supabase) {
-            console.error("❌ Supabase client is not initialized. Check your environment variables.");
+        if (!isSupabaseConfigured()) {
+            console.error("❌ Supabase is not configured. Check your Vercel Environment Variables.");
             return NextResponse.json({ error: "خطأ في تكوين الخادم (سوبابيس)" }, { status: 500 });
         }
 
-        // Upload to Supabase Storage
+        // Upload to Supabase Storage (Triggering Proxy)
         const { data, error: uploadError } = await supabase.storage
             .from("book-images")
             .upload(filename, file, {
