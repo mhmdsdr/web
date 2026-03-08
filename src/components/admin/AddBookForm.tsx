@@ -36,7 +36,7 @@ function inputClass(hasError: boolean) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 interface AddBookFormProps {
-    onAdd: (book: Omit<Book, "id">) => void;
+    onAdd: (book: Omit<Book, "id">) => Promise<void>;
     onClose: () => void;
 }
 
@@ -133,15 +133,20 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
             setUploading(false);
         }
 
-        onAdd({
-            title: form.title.trim(),
-            author: form.author.trim(),
-            price: Number(form.price),
-            category: form.category,
-            coverImage,
-            description: form.description.trim() || undefined,
-        });
-        setSubmitting(false);
+        try {
+            await onAdd({
+                title: form.title.trim(),
+                author: form.author.trim(),
+                price: Number(form.price),
+                category: form.category,
+                coverImage,
+                description: form.description.trim() || undefined,
+            });
+        } catch (err: unknown) {
+            console.error("Add book error:", err);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
