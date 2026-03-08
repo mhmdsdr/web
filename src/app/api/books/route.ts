@@ -11,17 +11,42 @@ interface Book {
     description?: string;
 }
 
-// GET /api/books
-export async function GET() {
+// GET /api/books or /api/books?id=xxx
+export async function GET(req: NextRequest) {
     try {
         if (!isSupabaseConfigured()) {
             return NextResponse.json({ error: "Supabase data is not configured" }, { status: 500 });
         }
 
-        const { data, error } = await supabase
-            .from("books")
-            .select("*")
-            .order("created_at", { ascending: false });
+        const id = req.nextUrl.searchParams.get("id");
+        const search = req.nextUrl.searchParams.get("search");
+        const category = req.nextUrl.searchParams.get("category");
+
+        if (id) {
+            const { data, error } = await supabase
+                .from("books")
+                .select("*")
+                .eq("id", id)
+                .single();
+
+            if (error) {
+                console.error("Supabase Single Fetch Error:", error.message);
+                return NextResponse.json({ error: "الكتاب غير موجود" }, { status: 404 });
+            }
+            return NextResponse.json(data);
+        }
+
+        let query = supabase.from("books").select("*");
+
+        if (search) {
+            query = query.ilike("title", `%${search}%`);
+        }
+
+        if (category && category !== "الكل") {
+            query = query.eq("category", category);
+        }
+
+        const { data, error } = await query.order("created_at", { ascending: false });
 
         if (error) {
             console.error("Supabase Fetch Error:", error.message);
@@ -54,6 +79,7 @@ export async function POST(req: NextRequest) {
                 title: body.title,
                 author: body.author,
                 price: Number(body.price),
+                category: body.category,
                 image_url: body.image_url || body.coverImage,
                 description: body.description
             }])
@@ -110,7 +136,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         // Prepare update data (excluding id, mapping coverImage if present)
-        const { id, coverImage, category, inStock, ...updateData } = body;
+        const { id, coverImage, inStock, ...updateData } = body;
         if (coverImage || body.image_url) {
             updateData.image_url = coverImage || body.image_url;
         }
