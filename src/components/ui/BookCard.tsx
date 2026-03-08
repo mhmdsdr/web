@@ -60,15 +60,10 @@ export function BookCard({ book, index = 0 }: BookCardProps) {
                     </div>
                 )}
 
-                {/* Hover overlay - Add to Cart button */}
                 <div
                     className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center ${book.inStock === false ? "cursor-not-allowed" : ""
                         }`}
                     style={{ backgroundColor: "rgba(26,53,80,0.55)" }}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }}
                 >
                     <motion.button
                         onClick={(e) => {
