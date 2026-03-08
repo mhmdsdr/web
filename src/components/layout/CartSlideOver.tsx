@@ -1,13 +1,34 @@
 "use client";
 
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Ticket, CheckCircle, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useState } from "react";
 
 export function CartSlideOver() {
-    const { items, isCartOpen, closeCart, removeItem, updateQuantity, cartTotal } = useCart();
+    const {
+        items, isCartOpen, closeCart, removeItem, updateQuantity,
+        subtotal, cartTotal, discountPercent, couponCode, applyCoupon, removeCoupon
+    } = useCart();
     const router = useRouter();
+
+    const [couponInput, setCouponInput] = useState("");
+    const [isApplying, setIsApplying] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleApply = async () => {
+        if (!couponInput.trim()) return;
+        setIsApplying(true);
+        setError("");
+        const result = await applyCoupon(couponInput);
+        if (!result.success) {
+            setError(result.error || "كود غير صالح");
+        } else {
+            setCouponInput("");
+        }
+        setIsApplying(false);
+    };
 
     const handleCheckout = () => {
         closeCart();
@@ -36,13 +57,18 @@ export function CartSlideOver() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                            <ShoppingBag className="w-12 h-12 mb-4 opacity-20" />
                             <p className="text-lg">سلة التسوق فارغة</p>
                         </div>
                     ) : (
                         items.map(item => (
                             <div key={item.id} className="flex gap-4 p-3 bg-cream dark:bg-gray-800 rounded-xl">
                                 <div className="w-16 h-24 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center text-gray-400 text-xs">
-                                    غلاف
+                                    {item.coverImage ? (
+                                        <img src={item.coverImage} className="w-full h-full object-cover" alt={item.title} />
+                                    ) : (
+                                        "غلاف"
+                                    )}
                                 </div>
                                 <div className="flex flex-col justify-between flex-1">
                                     <div>
@@ -77,41 +103,83 @@ export function CartSlideOver() {
 
                 {items.length > 0 && (
                     <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-3">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium text-gray-500">المجموع التقديري</span>
-                            <span className="text-xl font-bold text-navy dark:text-cream">{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
+                        {/* Coupon Section */}
+                        <div className="pb-3 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={couponInput}
+                                    onChange={e => setCouponInput(e.target.value)}
+                                    placeholder="كود الخصم (مثل: SAVE10)"
+                                    disabled={discountPercent > 0}
+                                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gold bg-gray-50 dark:bg-gray-800 uppercase font-mono disabled:opacity-50"
+                                />
+                                <button
+                                    onClick={handleApply}
+                                    disabled={isApplying || !couponInput.trim() || discountPercent > 0}
+                                    className="px-4 py-2 bg-navy text-white text-xs font-bold rounded-xl hover:bg-gold disabled:opacity-50 transition-colors"
+                                >
+                                    {isApplying ? "..." : (discountPercent > 0 ? "تم" : "تحقق")}
+                                </button>
+                            </div>
+                            {error && <p className="text-red-500 text-[10px] mt-1 font-bold">{error}</p>}
+                            {discountPercent > 0 && (
+                                <div className="flex items-center justify-between mt-1">
+                                    <p className="text-green-600 text-[10px] font-bold flex items-center gap-1">
+                                        <CheckCircle className="w-3 h-3" />
+                                        خصم {discountPercent}% مفعّل ({couponCode})
+                                    </p>
+                                    <button onClick={removeCoupon} className="text-[10px] text-gray-400 hover:text-red-500 underline">إلغاء</button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500">المجموع الفرعي</span>
+                                <span className="font-semibold">{subtotal.toLocaleString("ar-IQ")} د.ع</span>
+                            </div>
+                            {discountPercent > 0 && (
+                                <div className="flex justify-between items-center text-sm text-green-600">
+                                    <span>الخصم ({discountPercent}%)</span>
+                                    <span dir="ltr">-{(subtotal * (discountPercent / 100)).toLocaleString("ar-IQ")} د.ع</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center pt-1">
+                                <span className="font-bold text-navy dark:text-cream">الإجمالي</span>
+                                <span className="text-xl font-black text-navy dark:text-cream">{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
+                            </div>
                         </div>
 
                         {/* Link to full cart page */}
                         <Link
                             href="/cart"
                             onClick={closeCart}
-                            className="block text-center text-xs font-bold text-navy hover:text-gold transition-colors mb-2"
+                            className="block text-center text-[10px] font-bold text-navy hover:text-gold transition-colors"
                         >
-                            عرض السلة بالتفصيل وتطبيق كوبون الخصم
+                            عرض السلة بالتفصيل
                         </Link>
 
                         {/* Button 2: Proceed to Checkout */}
                         <button
                             onClick={handleCheckout}
-                            className="w-full py-3.5 bg-navy hover:bg-gold text-white rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                            className="w-full py-4 bg-navy hover:bg-gold text-white rounded-2xl font-black transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
                         >
                             متابعة الشراء
-                        </button>
-
-                        {/* Button 1: Continue Shopping */}
-                        <button
-                            onClick={() => {
-                                closeCart();
-                                router.push("/");
-                            }}
-                            className="w-full py-3 bg-white border-2 border-navy/10 hover:border-gold hover:bg-gold/5 text-navy dark:text-cream rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                            إكمال التسوق
+                            <ArrowRight className="w-5 h-5 rotate-180" />
                         </button>
                     </div>
                 )}
             </div>
         </>
     );
+}
+
+// Dummy ShoppingBag icon if not imported
+function ShoppingBag({ className }: { className?: string }) {
+    return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+    )
 }

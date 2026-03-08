@@ -21,7 +21,12 @@ interface CartContextType {
     updateQuantity: (id: string, quantity: number) => void;
     clearCart: () => void;
     cartItemCount: number;
-    cartTotal: number;
+    subtotal: number;
+    cartTotal: number; // Final total after discount
+    couponCode: string;
+    discountPercent: number;
+    applyCoupon: (code: string) => Promise<{ success: boolean; error?: string }>;
+    removeCoupon: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -29,16 +34,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [couponCode, setCouponCode] = useState("");
+    const [discountPercent, setDiscountPercent] = useState(0);
 
     // Load from localStorage on mount
     useEffect(() => {
-        const saved = localStorage.getItem("tswah-cart");
-        if (saved) {
+        const savedCart = localStorage.getItem("tswah-cart");
+        if (savedCart) {
             try {
-                setItems(JSON.parse(saved));
+                setItems(JSON.parse(savedCart));
             } catch (e) {
                 console.error("Failed to parse cart from localStorage", e);
             }
+        }
+
+        const savedCoupon = localStorage.getItem("tswah-coupon");
+        if (savedCoupon) {
+            try {
+                const { code, percent } = JSON.parse(savedCoupon);
+                setCouponCode(code);
+                setDiscountPercent(percent);
+            } catch (e) { }
         }
     }, []);
 
@@ -46,6 +62,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         localStorage.setItem("tswah-cart", JSON.stringify(items));
     }, [items]);
+
+    useEffect(() => {
+        if (couponCode && discountPercent) {
+            localStorage.setItem("tswah-coupon", JSON.stringify({ code: couponCode, percent: discountPercent }));
+        } else {
+            localStorage.removeItem("tswah-coupon");
+        }
+    }, [couponCode, discountPercent]);
 
     const openCart = useCallback(() => setIsCartOpen(true), []);
     const closeCart = useCallback(() => setIsCartOpen(false), []);
@@ -75,11 +99,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const clearCart = useCallback(() => {
         setItems([]);
+        setCouponCode("");
+        setDiscountPercent(0);
         setIsCartOpen(false);
     }, []);
 
+    const applyCoupon = async (code: string) => {
+        try {
+            const resp = await fetch(`/api/coupons?code=${encodeURIComponent(code.trim())}`);
+            const data = await resp.json();
+            if (resp.ok) {
+                setCouponCode(code.trim().toUpperCase());
+                setDiscountPercent(data.discount_percent);
+                return { success: true };
+            } else {
+                return { success: false, error: data.error };
+            }
+        } catch (err) {
+            return { success: false, error: "خطأ في الاتصال بالسيرفر" };
+        }
+    };
+
+    const removeCoupon = useCallback(() => {
+        setCouponCode("");
+        setDiscountPercent(0);
+    }, []);
+
     const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-    const cartTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const cartTotal = subtotal * (1 - discountPercent / 100);
 
     return (
         <CartContext.Provider
@@ -93,7 +141,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 updateQuantity,
                 clearCart,
                 cartItemCount,
+                subtotal,
                 cartTotal,
+                couponCode,
+                discountPercent,
+                applyCoupon,
+                removeCoupon,
             }}
         >
             {children}

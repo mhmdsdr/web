@@ -8,38 +8,30 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 
 export default function CartPage() {
-    const { items, removeItem, updateQuantity, cartTotal, clearCart } = useCart();
+    const {
+        items, removeItem, updateQuantity, clearCart,
+        subtotal, cartTotal, discountPercent, couponCode, applyCoupon, removeCoupon
+    } = useCart();
     const router = useRouter();
 
-    // Coupon states
-    const [couponCode, setCouponCode] = useState("");
-    const [discountPercent, setDiscountPercent] = useState(0);
+    // Local UI states
+    const [couponInput, setCouponInput] = useState("");
     const [couponError, setCouponError] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
     const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) return;
+        if (!couponInput.trim()) return;
         setIsApplyingCoupon(true);
         setCouponError("");
-        try {
-            const resp = await fetch(`/api/coupons?code=${encodeURIComponent(couponCode.trim())}`);
-            const data = await resp.json();
-            if (resp.ok) {
-                setDiscountPercent(data.discount_percent);
-                setCouponError("");
-            } else {
-                setCouponError(data.error || "كود غير صحيح");
-                setDiscountPercent(0);
-            }
-        } catch (err) {
-            setCouponError("خطأ في الاتصال");
-            setDiscountPercent(0);
+        const result = await applyCoupon(couponInput);
+        if (!result.success) {
+            setCouponError(result.error || "كود غير صحيح");
+        } else {
+            setCouponInput("");
+            setCouponError("");
         }
         setIsApplyingCoupon(false);
     };
-
-    const discountAmount = cartTotal * (discountPercent / 100);
-    const finalTotal = cartTotal - discountAmount;
 
     if (items.length === 0) {
         return (
@@ -146,24 +138,33 @@ export default function CartPage() {
                                     <input
                                         type="text"
                                         placeholder="SALE20"
-                                        value={couponCode}
-                                        onChange={(e) => setCouponCode(e.target.value)}
-                                        className="flex-1 bg-transparent border-none focus:outline-none px-2 font-mono uppercase font-bold"
+                                        value={discountPercent > 0 ? couponCode : couponInput}
+                                        onChange={(e) => setCouponInput(e.target.value)}
+                                        className="flex-1 bg-transparent border-none focus:outline-none px-2 font-mono uppercase font-bold disabled:opacity-50"
                                         disabled={discountPercent > 0}
                                     />
-                                    <button
-                                        onClick={handleApplyCoupon}
-                                        disabled={isApplyingCoupon || !couponCode.trim() || discountPercent > 0}
-                                        className="bg-navy text-white px-6 py-2 rounded-xl font-bold hover:bg-gold transition-all disabled:opacity-50"
-                                    >
-                                        {isApplyingCoupon ? "..." : (discountPercent > 0 ? "فعال" : "تطبيق")}
-                                    </button>
+                                    {discountPercent > 0 ? (
+                                        <button
+                                            onClick={removeCoupon}
+                                            className="bg-red-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-red-600 transition-all"
+                                        >
+                                            إزالة
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={handleApplyCoupon}
+                                            disabled={isApplyingCoupon || !couponInput.trim()}
+                                            className="bg-navy text-white px-6 py-2 rounded-xl font-bold hover:bg-gold transition-all disabled:opacity-50"
+                                        >
+                                            {isApplyingCoupon ? "..." : "تطبيق"}
+                                        </button>
+                                    )}
                                 </div>
                                 {couponError && <p className="text-red-500 text-[10px] font-bold mt-2 pr-2">{couponError}</p>}
                                 {discountPercent > 0 && (
                                     <div className="flex items-center gap-1 mt-2 pr-2 text-green-600 animate-in fade-in slide-in-from-top-1">
                                         <CheckCircle className="w-3 h-3" />
-                                        <span className="text-[10px] font-bold">تم تطبيق خصم بقيمة {discountPercent}%</span>
+                                        <span className="text-[10px] font-bold">تم تطبيق خصم بقيمة {discountPercent}% للكود ({couponCode})</span>
                                     </div>
                                 )}
                             </div>
@@ -171,20 +172,20 @@ export default function CartPage() {
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between text-gray-500 font-bold">
                                     <span>المجموع الفرعي</span>
-                                    <span>{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
+                                    <span>{subtotal.toLocaleString("ar-IQ")} د.ع</span>
                                 </div>
 
                                 {discountPercent > 0 && (
                                     <div className="flex justify-between text-green-600 font-bold">
                                         <span>خصم الكوبون ({discountPercent}%)</span>
-                                        <span dir="ltr">-{discountAmount.toLocaleString("ar-IQ")} د.ع</span>
+                                        <span dir="ltr">-{(subtotal * (discountPercent / 100)).toLocaleString("ar-IQ")} د.ع</span>
                                     </div>
                                 )}
 
                                 <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-navy dark:text-cream">
                                     <span className="text-lg font-black">الإجمالي النهائي</span>
                                     <span className="text-3xl font-black text-gold">
-                                        {finalTotal.toLocaleString("ar-IQ")} د.ع
+                                        {cartTotal.toLocaleString("ar-IQ")} د.ع
                                     </span>
                                 </div>
                             </div>
