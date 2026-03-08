@@ -78,8 +78,12 @@ export default function BookDetailPage() {
         }
     }, [isDarkMode]);
 
+    const { addItem } = useCart();
+
     const handleAddToCart = () => {
-        alert("تمت الإضافة");
+        if (!book || book.inStock === false) return;
+        addItem(book);
+        alert("تمت إضافة الكتاب للسلة بنجاح");
     };
 
     if (loading) return (
