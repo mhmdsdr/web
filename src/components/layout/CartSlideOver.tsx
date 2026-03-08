@@ -2,6 +2,7 @@
 
 import { X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
 export function CartSlideOver() {
