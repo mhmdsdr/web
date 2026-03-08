@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
         const ext = file.name.split(".").pop() ?? "jpg";
         const filename = `book-${Date.now()}.${ext}`;
 
+        if (!supabase) {
+            console.error("❌ Supabase client is not initialized. Check your environment variables.");
+            return NextResponse.json({ error: "خطأ في تكوين الخادم (سوبابيس)" }, { status: 500 });
+        }
+
         // Upload to Supabase Storage
         const { data, error: uploadError } = await supabase.storage
             .from("book-images")
