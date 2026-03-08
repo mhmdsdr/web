@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
         let query = supabase.from("books").select("*");
 
         if (search) {
-            query = query.ilike("title", `%${search}%`);
+            query = query.or(`title.ilike.%${search}%,author.ilike.%${search}%`);
         }
 
         if (category && category !== "الكل") {

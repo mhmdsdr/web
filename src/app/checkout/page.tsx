@@ -27,6 +27,35 @@ export default function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderId, setOrderId] = useState("");
 
+    // Coupon states
+    const [couponCode, setCouponCode] = useState("");
+    const [discountPercent, setDiscountPercent] = useState(0);
+    const [couponError, setCouponError] = useState("");
+    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setIsApplyingCoupon(true);
+        setCouponError("");
+        try {
+            const resp = await fetch(`/api/coupons?code=${encodeURIComponent(couponCode.trim())}`);
+            const data = await resp.json();
+            if (resp.ok) {
+                setDiscountPercent(data.discount_percent);
+                setCouponError("");
+            } else {
+                setCouponError(data.error || "خطأ في التحقق من الكود");
+                setDiscountPercent(0);
+            }
+        } catch (err) {
+            setCouponError("خطأ في الاتصال بالخادم");
+            setDiscountPercent(0);
+        }
+        setIsApplyingCoupon(false);
+    };
+
+    const finalTotal = cartTotal * (1 - discountPercent / 100);
+
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
         if (!form.name.trim()) newErrors.name = "يرجى إدخال اسم المستلم";
@@ -46,12 +75,19 @@ export default function CheckoutPage() {
             const CHAT_ID = "832812051";
 
             const itemsList = items.map(i => `• ${i.title} (${i.quantity})`).join("\n");
-            const message = `🛍️ طلب جديد من المتجر (سلة التسوق)!\n\n` +
+            let message = `🛍️ طلب جديد من المتجر (سلة التسوق)!\n\n` +
                 `👤 اسم الزبون: ${form.name.trim()}\n` +
                 `📞 الهاتف: ${form.phone.trim()}\n` +
                 `📍 العنوان: ${form.address.trim()}\n\n` +
                 `📚 الكتب:\n${itemsList}\n\n` +
-                `💰 الإجمالي: ${cartTotal.toLocaleString("ar-IQ")} د.ع`;
+                `💰 المجموع الفرعي: ${cartTotal.toLocaleString("ar-IQ")} د.ع\n`;
+
+            if (discountPercent > 0) {
+                message += `🎟️ كود الخصم: ${couponCode.toUpperCase()} (${discountPercent}%\n)`;
+                message += `💵 الخصم: -${(cartTotal * (discountPercent / 100)).toLocaleString("ar-IQ")} د.ع\n`;
+            }
+
+            message += `✅ الإجمالي النهائي: ${finalTotal.toLocaleString("ar-IQ")} د.ع`;
 
             console.log("🛠️ DEBUG: Starting Checkout Telegram send...");
 
@@ -68,50 +104,21 @@ export default function CheckoutPage() {
             const result = await response.json();
 
             if (response.ok) {
-                setOrderId(`ORD-${Date.now()}`);
+                const newOrderId = `ORD-${Date.now()}`;
                 clearCart();
-                setIsSuccess(true);
+                router.push(`/checkout/success?orderId=${newOrderId}`);
             } else {
                 throw new Error(result.description || "فشل الإرسال إلى تليجرام");
             }
         } catch (err: any) {
             console.error("❌ Checkout Error:", err);
-            // still show success so user isn't stuck, but log the error
+            // still redirect so user isn't stuck, but log the error
+            const fallbackOrderId = `ORD-${Date.now()}`;
             clearCart();
-            setIsSuccess(true);
+            router.push(`/checkout/success?orderId=${fallbackOrderId}`);
         }
         setIsSubmitting(false);
     };
-
-
-    if (isSuccess) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center px-4">
-                <div className="text-center max-w-md">
-                    <div className="flex justify-center mb-6">
-                        <CheckCircle className="w-24 h-24 text-green-500" />
-                    </div>
-                    <h1 className="text-3xl font-black text-navy dark:text-cream mb-3">تم استلام طلبك بنجاح!</h1>
-                    {orderId && (
-                        <p className="text-sm font-mono mb-2 px-4 py-2 rounded-xl inline-block"
-                            style={{ backgroundColor: "#E8F4FD", color: "#2A6EA6" }}>
-                            رقم الطلب: <span className="font-bold">{orderId}</span>
-                        </p>
-                    )}
-                    <p className="text-gray-500 mb-8 mt-2">
-                        سيتواصل معك فريقنا قريباً على الرقم <span className="font-bold text-gold">{form.phone}</span> لتأكيد الطلب.
-                    </p>
-                    <Link
-                        href="/"
-                        className="inline-flex items-center gap-2 bg-gold text-white px-8 py-3 rounded-full font-bold hover:bg-navy transition-colors"
-                    >
-                        <BookOpen className="w-5 h-5" />
-                        العودة للمتجر
-                    </Link>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -179,7 +186,7 @@ export default function CheckoutPage() {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !form.name.trim() || !form.phone.trim() || !form.address.trim()}
                             className="w-full py-4 bg-navy text-white rounded-xl font-bold text-lg hover:bg-gold transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {isSubmitting ? (
@@ -216,9 +223,49 @@ export default function CheckoutPage() {
                                         </span>
                                     </div>
                                 ))}
-                                <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                                    <span className="font-bold text-navy dark:text-cream">الإجمالي</span>
-                                    <span className="text-xl font-black text-gold">{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
+
+                                {/* Coupon Section */}
+                                <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">هل لديك كود خصم؟</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={couponCode}
+                                            onChange={(e) => setCouponCode(e.target.value)}
+                                            placeholder="أدخل الكود هنا..."
+                                            disabled={discountPercent > 0}
+                                            className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gold disabled:opacity-50 uppercase font-mono"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleApplyCoupon}
+                                            disabled={isApplyingCoupon || !couponCode.trim() || discountPercent > 0}
+                                            className="px-4 py-2 bg-navy text-white text-sm font-bold rounded-xl hover:bg-gold transition-colors disabled:opacity-50"
+                                        >
+                                            {isApplyingCoupon ? "..." : (discountPercent > 0 ? "تم" : "تحقق")}
+                                        </button>
+                                    </div>
+                                    {couponError && <p className="text-red-500 text-[10px] mt-1 font-bold">{couponError}</p>}
+                                    {discountPercent > 0 && <p className="text-green-600 text-[10px] mt-1 font-bold">🎉 تمت إضافة خصم {discountPercent}% بنجاح!</p>}
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-500">المجموع الفرعي</span>
+                                        <span className="font-semibold text-navy dark:text-cream">{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
+                                    </div>
+
+                                    {discountPercent > 0 && (
+                                        <div className="flex justify-between items-center text-sm text-green-600 font-bold">
+                                            <span>الخصم ({discountPercent}%)</span>
+                                            <span dir="ltr">-{(cartTotal * (discountPercent / 100)).toLocaleString("ar-IQ")} د.ع</span>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-2 flex justify-between items-center border-t border-dashed border-gray-200 dark:border-gray-700">
+                                        <span className="font-black text-navy dark:text-cream">الإجمالي النهائي</span>
+                                        <span className="text-2xl font-black text-gold">{finalTotal.toLocaleString("ar-IQ")} د.ع</span>
+                                    </div>
                                 </div>
                             </div>
                         )}

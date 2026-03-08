@@ -81,6 +81,15 @@ export function CartSlideOver() {
                             <span className="text-xl font-bold text-navy dark:text-cream">{cartTotal.toLocaleString("ar-IQ")} د.ع</span>
                         </div>
 
+                        {/* Link to full cart page */}
+                        <Link
+                            href="/cart"
+                            onClick={closeCart}
+                            className="block text-center text-xs font-bold text-navy hover:text-gold transition-colors mb-2"
+                        >
+                            عرض السلة بالتفصيل وتطبيق كوبون الخصم
+                        </Link>
+
                         {/* Button 2: Proceed to Checkout */}
                         <button
                             onClick={handleCheckout}

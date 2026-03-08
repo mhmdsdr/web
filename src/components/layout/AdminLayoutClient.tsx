@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, LayoutDashboard, BookMarked, ShoppingBag, LogOut } from "lucide-react";
+import { BookOpen, LayoutDashboard, BookMarked, ShoppingBag, LogOut, Ticket } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 
 const NAV = [
     { label: "لوحة التحكم", href: "/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: "إدارة الكتب", href: "/admin/books", icon: <BookMarked className="w-5 h-5" /> },
+    { label: "الكوبونات", href: "/admin/coupons", icon: <Ticket className="w-5 h-5" /> },
     { label: "الطلبات", href: "/admin/orders", icon: <ShoppingBag className="w-5 h-5" /> },
 ];
 
