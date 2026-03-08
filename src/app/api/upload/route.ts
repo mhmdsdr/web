@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
     try {
@@ -28,20 +29,29 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Ensure uploads directory exists
-        const uploadsDir = path.join(process.cwd(), "public", "uploads");
-        await mkdir(uploadsDir, { recursive: true });
-
         // Create a unique filename
         const ext = file.name.split(".").pop() ?? "jpg";
         const filename = `book-${Date.now()}.${ext}`;
-        const filepath = path.join(uploadsDir, filename);
 
-        // Write file to disk
-        const buffer = Buffer.from(await file.arrayBuffer());
-        await writeFile(filepath, buffer);
+        // Upload to Supabase Storage
+        const { data, error: uploadError } = await supabase.storage
+            .from("book-images")
+            .upload(filename, file, {
+                cacheControl: "3600",
+                upsert: false
+            });
 
-        return NextResponse.json({ url: `/uploads/${filename}` });
+        if (uploadError) {
+            console.error("Supabase Upload Error:", uploadError);
+            return NextResponse.json({ error: "فشل رفع الصورة إلى سوبابيس" }, { status: 500 });
+        }
+
+        // Get Public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from("book-images")
+            .getPublicUrl(filename);
+
+        return NextResponse.json({ url: publicUrl });
     } catch (err) {
         console.error("Upload error:", err);
         return NextResponse.json({ error: "حدث خطأ أثناء رفع الملف" }, { status: 500 });
