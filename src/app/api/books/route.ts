@@ -9,6 +9,7 @@ interface Book {
     category?: string;
     image_url?: string;
     description?: string;
+    inStock?: boolean;
 }
 
 // GET /api/books or /api/books?id=xxx
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
                 price: Number(body.price),
                 category: body.category,
                 image_url: body.image_url || body.coverImage,
-                description: body.description
+                description: body.description,
+                inStock: body.inStock !== undefined ? body.inStock : true
             }])
             .select()
             .single();
@@ -136,9 +138,14 @@ export async function PATCH(req: NextRequest) {
         }
 
         // Prepare update data (excluding id, mapping coverImage if present)
-        const { id, coverImage, inStock, ...updateData } = body;
+        const { id, coverImage, ...updateData } = body;
         if (coverImage || body.image_url) {
             updateData.image_url = coverImage || body.image_url;
+        }
+
+        // Ensure inStock is explicitly included if it's in the body
+        if (body.inStock !== undefined) {
+            updateData.inStock = body.inStock;
         }
 
         const { data, error } = await supabase

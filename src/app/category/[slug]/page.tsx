@@ -11,7 +11,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORY_MAP: Record<string, string> = {
-    "self-development": "تطوير ذات",
+    "self-development": "تطوير الذات",
     "philosophy": "فلسفة",
     "religious": "ديني",
     "novel": "رواية",

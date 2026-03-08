@@ -11,6 +11,7 @@ export default function AdminBooksPage() {
     const [showForm, setShowForm] = useState(false);
     const [search, setSearch] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+    const [editingBook, setEditingBook] = useState<Book | null>(null);
     const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
     // Fetch books from API
@@ -43,20 +44,27 @@ export default function AdminBooksPage() {
         b.title.includes(search) || b.author.includes(search) || b.category.includes(search)
     );
 
-    // Add via API then update local state
-    const handleAdd = async (data: Omit<Book, "id">) => {
+    // Add or Update via API then update local state
+    const handleSave = async (data: Omit<Book, "id">, id?: string) => {
+        const isUpdate = !!id;
         const res = await fetch("/api/books", {
-            method: "POST",
+            method: isUpdate ? "PATCH" : "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
+            body: JSON.stringify(isUpdate ? { ...data, id } : data),
         });
+
         if (res.ok) {
-            const newBook: Book = await res.json();
-            setBooks(prev => [newBook, ...prev]);
-            setShowForm(false);
-            setToast({ msg: `تمت إضافة "${newBook.title}" بنجاح`, type: "success" });
+            const savedBook: Book = await res.json();
+            if (isUpdate) {
+                setBooks(prev => prev.map(b => b.id === id ? savedBook : b));
+                setEditingBook(null);
+            } else {
+                setBooks(prev => [savedBook, ...prev]);
+                setShowForm(false);
+            }
+            setToast({ msg: isUpdate ? `تم تحديث "${savedBook.title}"` : `تمت إضافة "${savedBook.title}" بنجاح`, type: "success" });
         } else {
-            setToast({ msg: "فشل في إضافة الكتاب", type: "error" });
+            setToast({ msg: isUpdate ? "فشل في تحديث الكتاب" : "فشل في إضافة الكتاب", type: "error" });
         }
     };
 
@@ -231,13 +239,22 @@ export default function AdminBooksPage() {
                                             </button>
                                         </td>
                                         <td className="px-5 py-3">
-                                            <button
-                                                onClick={() => setDeleteConfirm(book.id)}
-                                                className="p-2 rounded-lg hover:opacity-80 transition-opacity"
-                                                style={{ backgroundColor: "#fde8e8", color: "#e05252" }}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => setEditingBook(book)}
+                                                    className="p-2 rounded-lg hover:opacity-80 transition-opacity"
+                                                    style={{ backgroundColor: "#e8f4fd", color: "#2A6EA6" }}
+                                                >
+                                                    <BookOpen className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeleteConfirm(book.id)}
+                                                    className="p-2 rounded-lg hover:opacity-80 transition-opacity"
+                                                    style={{ backgroundColor: "#fde8e8", color: "#e05252" }}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -247,7 +264,8 @@ export default function AdminBooksPage() {
                 </div>
             </div>
 
-            {showForm && <AddBookForm onAdd={handleAdd} onClose={() => setShowForm(false)} />}
+            {showForm && <AddBookForm onSave={handleSave} onClose={() => setShowForm(false)} />}
+            {editingBook && <AddBookForm initialData={editingBook} onSave={handleSave} onClose={() => setEditingBook(null)} />}
         </div>
     );
 }

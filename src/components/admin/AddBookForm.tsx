@@ -36,17 +36,18 @@ function inputClass(hasError: boolean) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 interface AddBookFormProps {
-    onAdd: (book: Omit<Book, "id">) => Promise<void>;
+    initialData?: Book;
+    onSave: (book: Omit<Book, "id">, id?: string) => Promise<void>;
     onClose: () => void;
 }
 
-export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
+export function AddBookForm({ initialData, onSave, onClose }: AddBookFormProps) {
     const [form, setForm] = useState({
-        title: "",
-        author: "",
-        price: "",
-        category: CATEGORIES[0],
-        description: "",
+        title: initialData?.title || "",
+        author: initialData?.author || "",
+        price: initialData?.price?.toString() || "",
+        category: initialData?.category || CATEGORIES[0],
+        description: initialData?.description || "",
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
@@ -134,14 +135,14 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
         }
 
         try {
-            await onAdd({
+            await onSave({
                 title: form.title.trim(),
                 author: form.author.trim(),
                 price: Number(form.price),
                 category: form.category,
-                image_url,
+                image_url: image_url || initialData?.image_url || initialData?.coverImage,
                 description: form.description.trim() || undefined,
-            });
+            }, initialData?.id);
         } catch (err: unknown) {
             console.error("Add book error:", err);
         } finally {
@@ -163,7 +164,9 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
                     className="flex items-center justify-between px-6 py-4 flex-shrink-0"
                     style={{ backgroundColor: "#B8D9F0" }}
                 >
-                    <h2 className="text-lg font-black" style={{ color: "#1A3550" }}>إضافة كتاب جديد</h2>
+                    <h2 className="text-lg font-black" style={{ color: "#1A3550" }}>
+                        {initialData ? "تعديل الكتاب" : "إضافة كتاب جديد"}
+                    </h2>
                     <button onClick={onClose} className="p-1 rounded-lg hover:opacity-70 transition-opacity">
                         <X className="w-5 h-5" style={{ color: "#1A3550" }} />
                     </button>
@@ -321,7 +324,7 @@ export function AddBookForm({ onAdd, onClose }: AddBookFormProps) {
                                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     {uploading ? "جاري رفع الصورة..." : "جاري الحفظ..."}
                                 </>
-                            ) : "حفظ الكتاب"}
+                            ) : (initialData ? "حفظ التعديلات" : "حفظ الكتاب")}
                         </button>
                         <button
                             type="button"
